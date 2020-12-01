@@ -38,7 +38,6 @@
     "mocha-multi-reporters": "1.1.7",
     "mocha-notifier-reporter": "0.1.2",
     "monaco-editor": "^0.15.6",
-    "node-sass": "^4.12.0",
     "nyc": "12.0.2",
     "rimraf": "^2.6.3",
     "sass-loader": "^7.1.0",
@@ -96,5 +95,6 @@
     "all": true
   },
   "author": "Ryan McDermott <ryanmcdermott@google.com>",
-  "license": "Apache"
+  "license": "Apache",
+  "private": true
 }

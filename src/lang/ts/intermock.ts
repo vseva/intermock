@@ -70,21 +70,33 @@ type Types = Record<string, TypeCacheRecord>;
  * @param options Intermock options object
  * @param mockType Optional specification of what Faker type to use
  */
-function generatePrimitive(
-    property: string, syntaxType: ts.SyntaxKind, options: Options,
-    mockType?: string) {
+function generatePrimitive({
+  property,
+  kind,
+  options,
+  mockType,
+  interfaceName,
+}: {
+  property: string,
+  kind: ts.SyntaxKind,
+  options: Options,
+  mockType?: string,
+  interfaceName?: string,
+}) {
   const smartMockType = smartProps[property];
   const isFixedMode = options.isFixedMode ? options.isFixedMode : false;
+
+  console.log('generatePrimitive call:', JSON.stringify({ interfaceName, property, kind }));
 
   if (mockType) {
     return fake(mockType, options.isFixedMode);
   } else if (smartMockType) {
     return fake(smartMockType, options.isFixedMode);
   } else {
-    if (!defaultTypeToMock[syntaxType]) {
-      throw Error(`Unsupported Primitive type ${syntaxType}`);
+    if (!defaultTypeToMock[kind]) {
+      throw Error(`Unsupported Primitive type ${kind}`);
     }
-    return defaultTypeToMock[syntaxType](isFixedMode);
+    return defaultTypeToMock[kind](isFixedMode);
   }
 }
 
@@ -136,16 +148,23 @@ function getLiteralTypeValue(node: ts.LiteralTypeNode) {
  * @param kind TS data type of property type
  * @param mockType Specification of what Faker type to use
  * @param options Intermock general options object
+ * @param interfaceName Name of interface generic property belongs to
  */
 function processGenericPropertyType(
-    node: ts.PropertySignature, output: Output, property: string,
-    kind: ts.SyntaxKind, mockType: string, options: Options) {
+    node: ts.PropertySignature,
+    output: Output,
+    property: string,
+    kind: ts.SyntaxKind,
+    mockType: string,
+    options: Options,
+    interfaceName: string,
+) {
   if (node && node.type && ts.isLiteralTypeNode(node.type)) {
     output[property] = getLiteralTypeValue(node.type as ts.LiteralTypeNode);
     return;
   }
-  const mock = generatePrimitive(property, kind, options, mockType);
-  output[property] = mock;
+
+  output[property] = generatePrimitive({property, kind, options, mockType, interfaceName});
 }
 
 /**
@@ -183,7 +202,7 @@ function processFunctionPropertyType(
       break;
     default:
       body = `return ${
-          JSON.stringify(generatePrimitive('', returnType.kind, options))}`;
+          JSON.stringify(generatePrimitive({ property: '', kind: returnType.kind, options }))}`;
       break;
   }
 
@@ -224,7 +243,7 @@ function processIndexedAccessPropertyType(
       kind === ts.SyntaxKind.BooleanKeyword;
 
   if (isPrimitiveType && kind) {
-    output[property] = generatePrimitive(indexType, kind, options);
+    output[property] = generatePrimitive({ property: indexType, kind, options });
   } else {
     // TODO
   }
@@ -235,17 +254,24 @@ function processIndexedAccessPropertyType(
  *
  * @param node Node being processed
  * @param output The object outputted by Intermock after all types are mocked
- * @param property Output property to write to
- * @param typeName Type name of property
+ * @param property Output property to write to, название поля в получаемой структуре, например author (внутри ICommentToFrontendDto)
+ * @param typeName Type name of property, например ICommentToFrontendDtoAuthor при проходе по полю author внутри ICommentToFrontendDto
+ * при этом вызова самого ICommentToFrontendDto не происходит при получении ответа метода например "get-job-application-comments"
  * @param kind TS data type of property type
  * @param sourceFile TypeScript AST object compiled from file data
  * @param options Intermock general options object
  * @param types Top-level types of interfaces/aliases etc.
  */
 function processPropertyTypeReference(
-    node: ts.PropertySignature|ts.TypeNode, output: Output, property: string,
-    typeName: string, kind: ts.SyntaxKind, sourceFile: ts.SourceFile,
-    options: Options, types: Types) {
+    node: ts.PropertySignature|ts.TypeNode,
+    output: Output,
+    property: string,
+    typeName: string,
+    kind: ts.SyntaxKind,
+    sourceFile: ts.SourceFile,
+    options: Options,
+    types: Types
+) {
   let normalizedTypeName: string;
   let isArray = false;
 
@@ -261,7 +287,7 @@ function processPropertyTypeReference(
       (node as ts.MappedTypeNode).type;
   if (!isArray && typeReference && typeReference.typeArguments &&
       typeReference.typeArguments.length) {
-    console.log('generic');
+
     // Process Generic
     normalizedTypeName =
         ((typeReference as ts.TypeReferenceNode).typeName as ts.Identifier)
@@ -270,9 +296,16 @@ function processPropertyTypeReference(
 
   // TODO: Handle other generics
   if (normalizedTypeName !== typeName && isArray) {
-    processArrayPropertyType(
-        node, output, property, normalizedTypeName, kind, sourceFile, options,
-        types);
+    processArrayPropertyType({
+      typeName: normalizedTypeName,
+      node,
+      output,
+      property,
+      kind,
+      sourceFile,
+      options,
+      types,
+    });
     return;
   }
 
@@ -295,7 +328,13 @@ function processPropertyTypeReference(
             alias === ts.SyntaxKind.BooleanKeyword;
 
         if (isPrimitiveType) {
-          output[property] = generatePrimitive(property, alias, options, '');
+          output[property] = generatePrimitive({
+            kind: alias,
+            mockType: '',
+            interfaceName: normalizedTypeName,
+            property,
+            options,
+          });
         } else if (alias === ts.SyntaxKind.UnionType) {
           let parameters: string[] = [];
 
@@ -331,9 +370,17 @@ function processPropertyTypeReference(
             ((record.node as ts.TypeAliasDeclaration).type as
              ts.UnionOrIntersectionTypeNode)
                 .types = updatedArr as unknown as ts.NodeArray<ts.TypeNode>;
+
             processUnionPropertyType(
-                record.node as ts.PropertySignature, output, property, typeName,
-                record.kind, sourceFile, options, types);
+                record.node as ts.PropertySignature,
+                output,
+                property,
+                typeName,
+                record.kind,
+                sourceFile,
+                options,
+                types
+            );
           }
         } else if (alias === ts.SyntaxKind.TypeLiteral) {
           output[property] = {};
@@ -373,7 +420,7 @@ function processJsDocs(
 
   switch (tag.tagName.text) {
     case 'mockType':
-      const mock = generatePrimitive(property, node.kind, options, tagValue);
+      const mock = generatePrimitive({ property, kind: node.kind, options, mockType: tagValue });
       output[property] = mock;
       break;
 
@@ -398,19 +445,39 @@ function processJsDocs(
  * @param options Intermock general options object
  * @param types Top-level types of interfaces/aliases etc.
  */
-function processArrayPropertyType(
-    node: ts.PropertySignature|ts.TypeNode, output: Output, property: string,
-    typeName: string, kind: ts.SyntaxKind, sourceFile: ts.SourceFile,
-    options: Options, types: Types) {
+function processArrayPropertyType({
+    node,
+    output,
+    property,
+    typeName,
+    kind,
+    sourceFile,
+    options,
+    types,
+}: {
+  node: ts.PropertySignature|ts.TypeNode,
+  output: Output,
+  property: string,
+  typeName: string,
+  kind: ts.SyntaxKind,
+  sourceFile: ts.SourceFile,
+  options: Options,
+  types: Types
+}) {
   typeName = typeName.replace('[', '').replace(']', '');
   output[property] = resolveArrayType(
       node, property, typeName, kind, sourceFile, options, types);
 }
 
 function resolveArrayType(
-    node: ts.PropertySignature|ts.TypeNode, property: string, typeName: string,
-    kind: ts.SyntaxKind, sourceFile: ts.SourceFile, options: Options,
-    types: Types) {
+    node: ts.PropertySignature|ts.TypeNode,
+    property: string,
+    typeName: string,
+    kind: ts.SyntaxKind,
+    sourceFile: ts.SourceFile,
+    options: Options,
+    types: Types
+) {
   typeName = typeName.replace('[', '').replace(']', '');
   const result = [];
 
@@ -430,7 +497,13 @@ function resolveArrayType(
 
   for (let i = 0; i < arrayRange; i++) {
     if (isPrimitiveType) {
-      result.push(generatePrimitive(property, kind, options, ''));
+      result.push(generatePrimitive({
+        property,
+        kind,
+        options,
+        mockType: '',
+        interfaceName: typeName,
+      }));
     } else {
       const cache = {};
       processFile(sourceFile, cache, options, types, typeName);
@@ -477,7 +550,7 @@ function resolveTuplePropertyType(
       case ts.SyntaxKind.NumberKeyword:
       case ts.SyntaxKind.StringKeyword:
       case ts.SyntaxKind.BooleanKeyword:
-        result.push(generatePrimitive(property, typeNode.kind, options, ''));
+        result.push(generatePrimitive({ property, kind: typeNode.kind, options, mockType: '' }));
         break;
       case ts.SyntaxKind.LiteralType:
         result.push(getLiteralTypeValue(typeNode as ts.LiteralTypeNode));
@@ -513,9 +586,15 @@ function resolveTuplePropertyType(
  * @param types Top-level types of interfaces/aliases etc.
  */
 function processUnionPropertyType(
-    node: ts.PropertySignature, output: Output, property: string,
-    typeName: string, kind: ts.SyntaxKind, sourceFile: ts.SourceFile,
-    options: Options, types: Types) {
+    node: ts.PropertySignature,
+    output: Output,
+    property: string,
+    typeName: string,
+    kind: ts.SyntaxKind,
+    sourceFile: ts.SourceFile,
+    options: Options,
+    types: Types
+) {
   const unionNodes = node && node.type ?
       (node.type as ts.UnionTypeNode).types as ts.NodeArray<ts.TypeNode>:
       [];
@@ -523,7 +602,13 @@ function processUnionPropertyType(
       unionNodes.find(type => supportedPrimitiveTypes[type.kind]);
   if (supportedType) {
     output[property] =
-        generatePrimitive(property, supportedType.kind, options, '');
+        generatePrimitive({
+          property,
+          kind: supportedType.kind,
+          options,
+          mockType: '',
+          interfaceName: typeName,
+        });
     return;
   } else {
     const typeReferenceNode =
@@ -532,9 +617,15 @@ function processUnionPropertyType(
         undefined;
     if (typeReferenceNode) {
       processPropertyTypeReference(
-          typeReferenceNode, output, property,
+          typeReferenceNode,
+          output,
+          property,
           (typeReferenceNode.typeName as ts.Identifier).text,
-          typeReferenceNode.kind, sourceFile, options, types);
+          typeReferenceNode.kind,
+          sourceFile,
+          options,
+          types
+      );
       return;
     }
     const arrayNode =
@@ -542,13 +633,19 @@ function processUnionPropertyType(
             ts.ArrayTypeNode |
         undefined;
     if (arrayNode) {
-      processArrayPropertyType(
-          arrayNode, output, property,
-          `[${
-              ((arrayNode.elementType as ts.TypeReferenceNode).typeName as
-               ts.Identifier)
-                  .text}]`,
-          arrayNode.kind, sourceFile, options, types);
+      processArrayPropertyType({
+        node: arrayNode,
+        output,
+        property,
+        typeName: `[${
+            ((arrayNode.elementType as ts.TypeReferenceNode).typeName as
+                ts.Identifier)
+                .text}]`,
+        kind: arrayNode.kind,
+        sourceFile,
+        options,
+        types,
+      });
       return;
     }
     const functionNode = unionNodes.find(
@@ -640,10 +737,16 @@ function isAnyJsDocs(jsDocs: ts.JSDoc[]) {
  * @param sourceFile TypeScript AST object compiled from file data
  * @param options Intermock general options object
  * @param types Top-level types of interfaces/aliases etc.
+ * @param interfaceName Interface name for members to traverse
  */
 function traverseInterfaceMembers(
-    node: ts.Node, output: Output, sourceFile: ts.SourceFile, options: Options,
-    types: Types) {
+    node: ts.Node,
+    output: Output,
+    sourceFile: ts.SourceFile,
+    options: Options,
+    types: Types,
+    interfaceName: string,
+) {
   if (node.kind !== ts.SyntaxKind.PropertySignature) {
     return;
   }
@@ -662,9 +765,9 @@ function traverseInterfaceMembers(
     const isUnion = node.type && node.type.kind === ts.SyntaxKind.UnionType;
 
     if (isUnion) {
-      isUnionWithNull = !!(node.type as ts.UnionTypeNode)
-                              .types.map(type => type.kind)
-                              .some(kind => kind === ts.SyntaxKind.NullKeyword);
+      isUnionWithNull = (node.type as ts.UnionTypeNode)
+                          .types.map(type => type.kind)
+                          .some(kind => kind === ts.SyntaxKind.NullKeyword);
     }
 
     let typeName = '';
@@ -687,8 +790,14 @@ function traverseInterfaceMembers(
     switch (kind) {
       case ts.SyntaxKind.TypeReference:
         processPropertyTypeReference(
-            node, output, property, typeName, kind as ts.SyntaxKind, sourceFile,
-            options, types);
+            node,
+            output,
+            property,
+            typeName,
+            kind as ts.SyntaxKind, sourceFile,
+            options,
+            types
+        );
         break;
       case ts.SyntaxKind.UnionType:
         processUnionPropertyType(
@@ -701,9 +810,16 @@ function traverseInterfaceMembers(
             options, types);
         break;
       case ts.SyntaxKind.ArrayType:
-        processArrayPropertyType(
-            node, output, property, typeName, kind as ts.SyntaxKind, sourceFile,
-            options, types);
+        processArrayPropertyType({
+          node,
+          output,
+          property,
+          typeName,
+          kind: kind as ts.SyntaxKind,
+          sourceFile,
+          options,
+          types,
+        });
         break;
       case ts.SyntaxKind.FunctionType:
         processFunctionPropertyType(
@@ -716,7 +832,7 @@ function traverseInterfaceMembers(
         break;
       default:
         processGenericPropertyType(
-            node, output, property, kind as ts.SyntaxKind, '', options);
+            node, output, property, kind as ts.SyntaxKind, '', options, interfaceName);
         break;
     }
   };
@@ -775,17 +891,25 @@ function setEnum(
  * @param path Optional specific path to write to on the output object
  */
 function traverseInterface(
-    node: ts.Node, output: Output, sourceFile: ts.SourceFile, options: Options,
-    types: Types, propToTraverse?: string, path?: string) {
+    node: ts.Node,
+    output: Output,
+    sourceFile: ts.SourceFile,
+    options: Options,
+    types: Types,
+    propToTraverse?: string,
+    path?: string
+) {
   if (path) {
     output[path] = {};
     output = output[path];
   }
 
+  let interfaceName = path || '';
+
   if (!propToTraverse && !path) {
-    const newPath = (node as ts.InterfaceDeclaration).name.text;
-    output[newPath] = {};
-    output = output[newPath];
+    interfaceName = (node as ts.InterfaceDeclaration).name.text;
+    output[interfaceName] = {};
+    output = output[interfaceName];
   }
 
   const heritageClauses = (node as ts.InterfaceDeclaration).heritageClauses;
@@ -820,14 +944,12 @@ function traverseInterface(
     });
   }
 
-
-
   // TODO get range from JSDoc
   // TODO given a range of interfaces to generate, add to array. If 1
   // then just return an object
   node.forEachChild(
       child =>
-          traverseInterfaceMembers(child, output, sourceFile, options, types));
+          traverseInterfaceMembers(child, output, sourceFile, options, types, interfaceName || propToTraverse || ''));
 }
 
 function isSpecificInterface(name: string, options: Options) {
@@ -835,11 +957,7 @@ function isSpecificInterface(name: string, options: Options) {
     return true;
   }
 
-  if (options.interfaces.indexOf(name) === -1) {
-    return false;
-  }
-
-  return true;
+  return options.interfaces.indexOf(name) !== -1;
 }
 
 /**

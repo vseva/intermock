@@ -16,6 +16,8 @@
 import faker from 'faker';
 import {fixedData} from './fixed-data';
 
+faker.locale = 'en';
+
 /**
  * Wrapper for Faker, or any mocking framework
  */
