@@ -1,18 +1,3 @@
-/**
- * Copyright 2018 Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 import ts from 'typescript';
 
 import {DEFAULT_ARRAY_RANGE, FIXED_ARRAY_COUNT} from '../../lib/constants';
@@ -21,6 +6,7 @@ import {fake} from '../../lib/fake';
 import {randomRange} from '../../lib/random-range';
 import {smartProps} from '../../lib/smart-props';
 import {stringify} from '../../lib/stringify';
+import { customPrimitives } from '../../lib/custom-primitives';
 
 /**
  * Intermock general options
@@ -81,14 +67,17 @@ function generatePrimitive({
   kind: ts.SyntaxKind,
   options: Options,
   mockType?: string,
-  interfaceName?: string,
+  interfaceName: string,
 }) {
   const smartMockType = smartProps[property];
   const isFixedMode = options.isFixedMode ? options.isFixedMode : false;
+  const customPrimitive = customPrimitives[interfaceName] && customPrimitives[interfaceName][property];
 
-  console.log('generatePrimitive call:', JSON.stringify({ interfaceName, property, kind }));
+  console.log('podbor intermock | generatePrimitive call:', JSON.stringify({ interfaceName, property, kind }));
 
-  if (mockType) {
+  if (customPrimitive) {
+    return customPrimitive();
+  } else if (mockType) {
     return fake(mockType, options.isFixedMode);
   } else if (smartMockType) {
     return fake(smartMockType, options.isFixedMode);
@@ -202,7 +191,12 @@ function processFunctionPropertyType(
       break;
     default:
       body = `return ${
-          JSON.stringify(generatePrimitive({ property: '', kind: returnType.kind, options }))}`;
+          JSON.stringify(generatePrimitive({
+            interfaceName: '',
+            property: '',
+            kind: returnType.kind,
+            options,
+          }))}`;
       break;
   }
 
@@ -243,7 +237,12 @@ function processIndexedAccessPropertyType(
       kind === ts.SyntaxKind.BooleanKeyword;
 
   if (isPrimitiveType && kind) {
-    output[property] = generatePrimitive({ property: indexType, kind, options });
+    output[property] = generatePrimitive({
+      property: indexType,
+      interfaceName: '',
+      kind,
+      options,
+    });
   } else {
     // TODO
   }
@@ -420,7 +419,13 @@ function processJsDocs(
 
   switch (tag.tagName.text) {
     case 'mockType':
-      const mock = generatePrimitive({ property, kind: node.kind, options, mockType: tagValue });
+      const mock = generatePrimitive({
+        property,
+        kind: node.kind,
+        options,
+        mockType: tagValue,
+        interfaceName: '',
+      });
       output[property] = mock;
       break;
 
@@ -550,7 +555,13 @@ function resolveTuplePropertyType(
       case ts.SyntaxKind.NumberKeyword:
       case ts.SyntaxKind.StringKeyword:
       case ts.SyntaxKind.BooleanKeyword:
-        result.push(generatePrimitive({ property, kind: typeNode.kind, options, mockType: '' }));
+        result.push(generatePrimitive({
+          property,
+          kind: typeNode.kind,
+          options,
+          mockType: '',
+          interfaceName: '',
+        }));
         break;
       case ts.SyntaxKind.LiteralType:
         result.push(getLiteralTypeValue(typeNode as ts.LiteralTypeNode));
@@ -971,8 +982,12 @@ function isSpecificInterface(name: string, options: Options) {
  *     interface
  */
 function processFile(
-    sourceFile: ts.SourceFile, output: Output, options: Options, types: Types,
-    propToTraverse?: string) {
+    sourceFile: ts.SourceFile,
+    output: Output,
+    options: Options,
+    types: Types,
+    propToTraverse?: string
+) {
   const processNode = (node: ts.Node) => {
     switch (node.kind) {
       case ts.SyntaxKind.InterfaceDeclaration:
@@ -1098,6 +1113,8 @@ function formatOutput(output: Output, options: Options): string|Output {
  * @param options Intermock general options object
  */
 export function mock(options: Options) {
+  console.log('podbor intermock | mock run');
+
   const output: Output = {};
   const fileContents = options.files;
 
