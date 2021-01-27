@@ -4,6 +4,7 @@ export const smartProps: {[index: string]: string} = {
   company: 'company.companyName',
   birthday: 'date.past',
   created: 'date.past',
+  dueDate: 'date.future',
   createdAt: 'date.past',
   createdOn: 'date.past',
   interviewStartDate: 'date.future',

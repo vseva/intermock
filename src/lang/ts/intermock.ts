@@ -7,6 +7,7 @@ import {randomRange} from '../../lib/random-range';
 import {smartProps} from '../../lib/smart-props';
 import {stringify} from '../../lib/stringify';
 import { customPrimitives } from '../../lib/custom-primitives';
+import {customEnumArrays} from "../../lib/custom-enum-arrays";
 
 /**
  * Intermock general options
@@ -73,20 +74,24 @@ function generatePrimitive({
   const isFixedMode = options.isFixedMode ? options.isFixedMode : false;
   const customPrimitive = customPrimitives[interfaceName] && customPrimitives[interfaceName][property];
 
-  console.log('podbor intermock | generatePrimitive call:', JSON.stringify({ interfaceName, property, kind }));
-
   if (customPrimitive) {
     return customPrimitive();
-  } else if (mockType) {
-    return fake(mockType, options.isFixedMode);
-  } else if (smartMockType) {
-    return fake(smartMockType, options.isFixedMode);
-  } else {
-    if (!defaultTypeToMock[kind]) {
-      throw Error(`Unsupported Primitive type ${kind}`);
-    }
-    return defaultTypeToMock[kind](isFixedMode);
   }
+
+  if (mockType) {
+    return fake(mockType, options.isFixedMode);
+  }
+
+  if (smartMockType) {
+    return fake(smartMockType, options.isFixedMode);
+  }
+
+  if (!defaultTypeToMock[kind]) {
+    throw Error(`Unsupported Primitive type ${kind}`);
+  }
+
+  //console.log('not caught generatePrimitive call:', JSON.stringify({ interfaceName, property, kind }));
+  return defaultTypeToMock[kind](isFixedMode);
 }
 
 /**
@@ -486,6 +491,9 @@ function resolveArrayType(
   typeName = typeName.replace('[', '').replace(']', '');
   const result = [];
 
+  //console.log('resolveArrayType call before: ', typeName, property, kind);
+  //resolveArrayType call before: PermissionActionResponseActionsEnum actions 174
+
   if (ts.isTypeNode(node)) {
     kind = node.kind;
   } else if ((node.type as ts.ArrayTypeNode).elementType) {
@@ -499,6 +507,15 @@ function resolveArrayType(
   const arrayRange = options.isFixedMode ?
       FIXED_ARRAY_COUNT :
       randomRange(DEFAULT_ARRAY_RANGE[0], DEFAULT_ARRAY_RANGE[1]);
+
+  //console.log('resolveArrayType call after: ', typeName, property, kind, isPrimitiveType);
+  //resolveArrayType call after: PermissionActionResponseActionsEnum actions 169 false
+
+  const arrayOfEnums = customEnumArrays(typeName, types);
+
+  if (arrayOfEnums) {
+    return arrayOfEnums;
+  }
 
   for (let i = 0; i < arrayRange; i++) {
     if (isPrimitiveType) {
@@ -515,6 +532,7 @@ function resolveArrayType(
       result.push(cache);
     }
   }
+
   return result;
 }
 
