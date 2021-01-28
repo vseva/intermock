@@ -52,4 +52,7 @@ export const customPrimitives: {[index: string]: InterfaceProps} = {
     IDeputyItemDTO: {
         personId: generateId,
     },
+    IConditionsOfEmploymentDTO: {
+        firstWorkingDate: generatePastDate,
+    },
 };

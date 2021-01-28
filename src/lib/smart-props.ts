@@ -6,6 +6,7 @@ export const smartProps: {[index: string]: string} = {
   created: 'date.past',
   dueDate: 'date.future',
   createdAt: 'date.past',
+  updatedAt: 'date.past',
   createdOn: 'date.past',
   interviewStartDate: 'date.future',
   testDate: 'date.future',
