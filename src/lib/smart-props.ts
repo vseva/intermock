@@ -29,6 +29,8 @@ export const smartProps: {[index: string]: string} = {
   name: 'name.findName',
   nickName: 'name.findName',
   oid: 'random.uuid',
+  personId: 'random.uuid',
+  ownerPersonId: 'random.uuid',
   phone: 'phone.phoneNumber',
   position: 'name.jobTitle',
   patronymic: 'name.firstName',
@@ -36,4 +38,5 @@ export const smartProps: {[index: string]: string} = {
   primaryEmail: 'internet.email',
   startDate: 'date.past',
   username: 'internet.userName',
+  positionCity: 'address.city',
 };
