@@ -16,7 +16,7 @@ const generateNumberInRange = (minimum: number, maximum: number) => {
     return Math.floor(Math.random() * (max - min) + min);
 };
 const generateGrade = () => generateNumberInRange(1, 15).toString();
-const generateNumber = () => fake('random.number');
+const generateSfId = () => generateNumberInRange(1000000, 9999999).toString();
 const generatePastDate = () => fake('date.past');
 const getRandomItem = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
 const getJobTitle = () => getRandomItem(jobTitles);
@@ -30,7 +30,7 @@ export const customPrimitives: {[index: string]: InterfaceProps} = {
         entityId: generateId,
     },
     IJobRequisitionGroupListDtoRequisitions: {
-        //id: generateId,
+        sfId: generateSfId,
         gradeFrom: generateGrade,
         gradeTo: generateGrade,
         updated: generatePastDate,
@@ -63,6 +63,51 @@ export const customPrimitives: {[index: string]: InterfaceProps} = {
     IJobRequisitionPlainWithDepartmentsDto: {
         title: getJobTitle,
         jobGrade: generateGrade,
-        //ownerPersonId: generateId,
+        sfId: generateSfId,
+    },
+    IJobRequisitionWithApplicationStatusesDTO: {
+        sfId: generateSfId,
+    },
+    IOffersToApproveViewDto: {
+        sfId: generateSfId,
+    },
+    IRequisitionPlainDTO: {
+        sfId: generateSfId,
+    },
+    IRequisitionShortInfoDTO: {
+        sfId: generateSfId,
+    },
+    IRequisitionUpdatePlainDTO: {
+        sfId: generateSfId,
+    },
+    IRequisitionWithOrgStructureInfoDTO: {
+        sfId: generateSfId,
+    },
+    IViewJobRequisitionFreeFromCandidatesDto: {
+        sfId: generateSfId,
+    },
+    IApplicationGroupInfoApplications: {
+        sfId: generateSfId,
+    },
+    ICandidateApplicationDTO: {
+        sfId: generateSfId,
+    },
+    ICandidateDTO: {
+        sfId: generateSfId,
+    },
+    ICandidateRequisitionDTO: {
+        sfId: generateSfId,
+    },
+    IJobApplicationTaskDto: {
+        sfId: generateSfId,
+    },
+    IJsonRpcMethodJobApplicationMtwId: {
+        sfId: generateSfId,
+    },
+    IRequisitionShortInfoWithDepartmentsDto: {
+        sfId: generateSfId,
+    },
+    IJobRequisitionListItemDTO: {
+        sfId: generateSfId,
     },
 };
