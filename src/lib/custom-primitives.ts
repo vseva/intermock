@@ -17,6 +17,8 @@ const generateNumberInRange = (minimum: number, maximum: number) => {
 };
 const generateGrade = () => generateNumberInRange(1, 15).toString();
 const generateSfId = () => generateNumberInRange(1000000, 9999999).toString();
+const generateNumberUnderTen = () => generateNumberInRange(1, 10).toString();
+const generateNumberUnderHundred = () => generateNumberInRange(1, 100).toString();
 const generatePastDate = () => fake('date.past');
 const getRandomItem = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
 const getJobTitle = () => getRandomItem(jobTitles);
@@ -109,5 +111,34 @@ export const customPrimitives: {[index: string]: InterfaceProps} = {
     },
     IJobRequisitionListItemDTO: {
         sfId: generateSfId,
+    },
+    IJobPositionWithPersonsDTO: {
+        grade: generateGrade,
+        number: generateSfId,
+    },
+    IViewMyTeamSummaryDtoEmptyPreviews: {
+        grade: generateGrade,
+        number: generateSfId,
+        percentAllocated: generateNumberUnderHundred,
+        percentFree: generateNumberUnderHundred,
+        percentOccupancy: generateNumberUnderHundred,
+    },
+    IViewMyTeamSummaryDtoPartialPreviews: {
+        grade: generateGrade,
+        number: generateSfId,
+        percentAllocated: generateNumberUnderHundred,
+        percentFree: generateNumberUnderHundred,
+        percentOccupancy: generateNumberUnderHundred,
+    },
+    IViewMyTeamSummaryDtoTakenPreviews: {
+        grade: generateGrade,
+        number: generateSfId,
+        percentAllocated: generateNumberUnderHundred,
+        percentFree: generateNumberUnderHundred,
+        percentOccupancy: generateNumberUnderHundred,
+    },
+    IPositionDto: {
+        gradeLevel: generateGrade,
+        positionName: getJobTitle,
     },
 };
