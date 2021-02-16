@@ -7,7 +7,7 @@ type TypeCacheRecord = {
 };
 
 export const customEnumArrays = (typeName: string, types: Record<string, TypeCacheRecord>) => {
-    if (typeName === 'PermissionActionResponseActionsEnum') {
+    if (typeName === 'PermissionRoleResponseActionsEnum') {
         const node = types[typeName].node as EnumDeclaration;
         const keys = Object.keys(node.members);
 
