@@ -1,10 +1,10 @@
 {
-  "name": "intermock",
-  "version": "0.2.5",
+  "name": "pdbr-intermock",
+  "version": "0.1.0",
   "description": "Automatically create mock objects and JSON from TypeScript interfaces via Faker",
   "repository": {
     "type": "git",
-    "url": "https://github.com/google/intermock.git"
+    "url": "https://github.com/vseva/intermock.git"
   },
   "bin": {
     "intermock": "./build/src/cli/index.js"
@@ -94,7 +94,6 @@
     ],
     "all": true
   },
-  "author": "Ryan McDermott <ryanmcdermott@google.com>",
-  "license": "Apache",
-  "private": true
+  "author": "Seva Denisov <sevadenisov@gmail.com>",
+  "license": "Apache"
 }
