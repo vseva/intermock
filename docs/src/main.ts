@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import './styles/app.scss';
-import {mock} from '../../src/lang/ts/intermock';
+import {mock} from '../../src/intermock';
 
 async function setup() {
   const [intermock, monaco] = await Promise.all([
