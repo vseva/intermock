@@ -19,15 +19,15 @@ const generateSfId = () => generateNumberInRange(1000000, 9999999).toString();
 const generateNumberUnderHundred = () => generateNumberInRange(1, 100).toString();
 const generatePastDate = () => fake('date.past');
 const generateFutureDate = () => fake('date.future');
+const generateJobTitle = () => getRandomItem(jobTitles);
 const getRandomItem = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
-const getJobTitle = () => getRandomItem(jobTitles);
 
 export const customPrimitives: {[index: string]: InterfaceProps} = {
     IJobRequisitionGroupListDtoRequisitions: {
         sfId: generateSfId,
         gradeFrom: generateGrade,
         gradeTo: generateGrade,
-        title: getJobTitle,
+        title: generateJobTitle,
     },
     IJobRequisitionGroupListDTO: {
         groupName: () => getRandomItem([
@@ -41,7 +41,7 @@ export const customPrimitives: {[index: string]: InterfaceProps} = {
         activeTo: generateFutureDate,
     },
     IJobRequisitionPlainWithDepartmentsDto: {
-        title: getJobTitle,
+        title: generateJobTitle,
         jobGrade: generateGrade,
         sfId: generateSfId,
     },
@@ -56,6 +56,9 @@ export const customPrimitives: {[index: string]: InterfaceProps} = {
     },
     IRequisitionShortInfoDTO: {
         sfId: generateSfId,
+        positionNumber: generateSfId,
+        grade: generateGrade,
+        title: generateJobTitle,
     },
     IRequisitionUpdatePlainDTO: {
         sfId: generateSfId,
@@ -117,12 +120,12 @@ export const customPrimitives: {[index: string]: InterfaceProps} = {
     },
     IPositionDto: {
         gradeLevel: generateGrade,
-        positionName: getJobTitle,
+        positionName: generateJobTitle,
     },
     ICandidateConsentDtoConsents: {
         purpose: () => 'CANDIDATE_POOL',
     },
     ICandidateApplicationViewDtoPostingInfo: {
-        jobRequisitionDescriptionTitle: getJobTitle,
+        jobRequisitionDescriptionTitle: generateJobTitle,
     },
 };

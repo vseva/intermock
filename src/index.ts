@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {mock as mockTS, Options} from './lang/ts/intermock';
+import {mock as mockTS, Options} from './intermock';
 
 export function mock(options: Options) {
   switch (options.language) {

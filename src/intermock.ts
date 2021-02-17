@@ -1,13 +1,13 @@
 import ts from 'typescript';
 
-import {DEFAULT_ARRAY_RANGE, FIXED_ARRAY_COUNT} from '../../lib/constants';
-import {defaultTypeToMock, supportedPrimitiveTypes} from '../../lib/default-type-to-mock';
-import {fake} from '../../lib/fake';
-import {randomRange} from '../../lib/random-range';
-import {smartProps} from '../../lib/smart-props';
-import {stringify} from '../../lib/stringify';
-import { customPrimitives } from '../../lib/custom-primitives';
-import {customEnumArrays} from "../../lib/custom-enum-arrays";
+import {DEFAULT_ARRAY_RANGE, FIXED_ARRAY_COUNT} from './lib/constants';
+import {defaultTypeToMock, supportedPrimitiveTypes} from './lib/default-type-to-mock';
+import {fake} from './lib/fake';
+import {randomRange} from './lib/random-range';
+import {smartProps} from './lib/smart-props';
+import {stringify} from './lib/stringify';
+import { customPrimitives } from './lib/custom-primitives';
+import {customEnumArrays} from "./lib/custom-enum-arrays";
 
 /**
  * Intermock general options
@@ -1131,7 +1131,7 @@ function formatOutput(output: Output, options: Options): string|Output {
  * @param options Intermock general options object
  */
 export function mock(options: Options) {
-  console.log('podbor intermock | mock run');
+  console.log('pdbr-intermock mock() call');
 
   const output: Output = {};
   const fileContents = options.files;
