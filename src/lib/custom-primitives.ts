@@ -21,6 +21,7 @@ const generatePastDate = () => fake('date.past');
 const generateFutureDate = () => fake('date.future');
 const generateJobTitle = () => getRandomItem(jobTitles);
 const getRandomItem = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
+const generateSingleWord = () => fake('lorem.word');
 
 export const customPrimitives: {[index: string]: InterfaceProps} = {
     IJobRequisitionGroupListDtoRequisitions: {
@@ -127,5 +128,13 @@ export const customPrimitives: {[index: string]: InterfaceProps} = {
     },
     ICandidateApplicationViewDtoPostingInfo: {
         jobRequisitionDescriptionTitle: generateJobTitle,
+    },
+    ICandidateContactsDtoSocialNetworks: {
+        id: () => generateNumberInRange(0, 8).toString(),
+        url: () => fake('internet.url'),
+    },
+    ICandidateTagsTags: {
+        key: generateSingleWord,
+        value: generateSingleWord,
     },
 };
